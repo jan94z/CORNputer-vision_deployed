@@ -8,34 +8,6 @@ from sklearn.decomposition import PCA
 from tqdm import tqdm
 from pathlib import Path
 
-def calc_reference_scale_from_json(json_path, ref_dict):
-    with open(json_path, 'r') as file:
-        data = json.load(file)
-
-    bboxs = {}
-    scales = []
-    segmasks = {}
-    for path, real_world_size in ref_dict.items():
-        for image in data['images']:
-            if path == image['path']:
-                id = image['id']
-                for ann in data['annotations']:
-                    if ann['image_id'] == id:
-                        bbox = ann['bbox']
-                        scale1 = real_world_size / bbox[2] # width (xywh format)
-                        scale2 = real_world_size / bbox[3] # height (xywh format)
-                        scale = (scale1 + scale2) / 2
-                        scales.append(scale)
-                        x, y, w, h = map(int, bbox)
-                        bboxs[path] = (x, y, w, h)
-                        segmasks[path] = ann['segmentation']
-                        break
-
-                        
-
-    scale = np.mean(scales)
-    return scale, bboxs, segmasks
-
 class SizeEstimator:
     def __init__(self, source, scale, method="pca", preprocessing_steps={"open": 0, "close": 0}, scaling_factor=None):
         """
@@ -313,3 +285,30 @@ class SizeEstimator:
         return fps
 
 
+def calc_reference_scale_from_json(json_path, ref_dict):
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+
+    bboxs = {}
+    scales = []
+    segmasks = {}
+    for path, real_world_size in ref_dict.items():
+        for image in data['images']:
+            if path == image['path']:
+                id = image['id']
+                for ann in data['annotations']:
+                    if ann['image_id'] == id:
+                        bbox = ann['bbox']
+                        scale1 = real_world_size / bbox[2] # width (xywh format)
+                        scale2 = real_world_size / bbox[3] # height (xywh format)
+                        scale = (scale1 + scale2) / 2
+                        scales.append(scale)
+                        x, y, w, h = map(int, bbox)
+                        bboxs[path] = (x, y, w, h)
+                        segmasks[path] = ann['segmentation']
+                        break
+
+                        
+
+    scale = np.mean(scales)
+    return scale, bboxs, segmasks

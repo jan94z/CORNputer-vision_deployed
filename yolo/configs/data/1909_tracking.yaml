@@ -1,0 +1,6 @@
+names:
+  0: maize
+path: /home/jan/datasets/1909_tracking_yolo
+test: ''
+train: train
+val: val
