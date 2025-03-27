@@ -1,0 +1,23 @@
+output_path: "" # path
+batch: 8
+
+# tracking
+seg_model: "" # path
+conf: 0.7 # tracking
+iou: 0.5 # tracking
+tracker: "" # path, tracking
+save_seg_masks: True
+seg_masks_visualization: # only relevant if save_seg_masks is True
+  show_pixels: True
+  show_bboxs: True
+  show_conf: True
+  color: [255, 0, 0]
+
+# classification
+cls_broken_model: "" # path
+cls_tip_model: "" # path
+save_cls_masks: True
+
+# size estimation
+method: "pca" # mbr
+save_size_masks: True

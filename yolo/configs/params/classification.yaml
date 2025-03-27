@@ -81,13 +81,13 @@ val:
 
 # yolo specific parameters as input for the YOLO.predict / YOLO.track function
 infer:
-  verbose: False
+  verbose: False #!
   conf: 0.25
   iou: 0.5
-  half: True
-  max_det: 300
-  vid_stride: 1
-  stream_buffer: False
+  half: True #!
+  max_det: 300 #!
+  vid_stride: 1 #!
+  stream_buffer: False #!
   visualize: False
   augment: False
   agnostic_nms: False

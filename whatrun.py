@@ -1,3 +1,4 @@
 # data capture
-# size analysis
-# yolo
+# postprocessing
+#         - everything
+#         - only tracking / only classification / only size analysis
