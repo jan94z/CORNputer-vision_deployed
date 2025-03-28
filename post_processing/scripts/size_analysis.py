@@ -274,12 +274,8 @@ class SizeEstimator:
     def _parse_source(self, source):
         """Parses the input source (file path, list, or directory)."""
         fps = []
-        if isinstance(source, str):
-            source = Path(source)
-            if os.path.isdir(source):
-                fps.extend(source / f for f in os.listdir(source) if f.endswith('.png'))
-            elif os.path.isfile(source):
-                fps.append(source)
-        elif isinstance(source, (list, tuple)):
-            fps.extend([Path(f) for f in source if os.path.isfile(f)])
+        if source.is_dir():
+            fps.extend(source / f for f in os.listdir(source) if f.endswith('.png'))
+        elif source.is_file():
+            fps.append(source)
         return fps

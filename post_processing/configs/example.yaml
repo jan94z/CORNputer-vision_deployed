@@ -3,16 +3,16 @@ batch: 8
 device: null
 
 # tracking
-seg_model: "../models/segmentation/segmentation.pt" # path
+seg_model: "/home/jan/CORNputer-vision_deployed/post_processing/models/segmentation/segmentation.pt" # path
 conf: 0.7 
 iou: 0.5 
-tracker: "../tracker/botsort.yaml" # path, tracking
-save_seg_masks: True
+tracker: "/home/jan/CORNputer-vision_deployed/post_processing/tracker/botsort.yaml" # path, tracking
+save_seg_masks: False
 seg_masks_visualization: # only relevant if save_seg_masks is True
   show_pixels: True
   show_bboxs: True
   show_conf: True
-  color: [255, 0, 0]
+  color: [[255, 0, 0]]
   overwrite_class: null
 
 # score
@@ -25,8 +25,8 @@ filter_method: "mean_std" # mad
 factor_std: 2.0
 
 # classification
-cls_broken_model: "../models/classification/broken.pt" # path
-cls_tip_model: "../models/classification/tip.pt" # path
+cls_broken_model: "/home/jan/CORNputer-vision_deployed/post_processing/models/classification/broken.pt" # path
+cls_tip_model: "/home/jan/CORNputer-vision_deployed/post_processing/models/classification/tip.pt" # path
 save_cls_masks: True
 
 # size estimation

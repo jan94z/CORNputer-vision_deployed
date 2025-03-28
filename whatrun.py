@@ -15,7 +15,9 @@ def main():
         run_data_capture.main()
     elif choice == "2":
         start = time.time()
-        run_post_processing.main()
+        # run_post_processing.main()
+        run_post_processing.main(config = "/home/jan/CORNputer-vision_deployed/post_processing/configs/example.yaml",
+    data = "/home/jan/datasets/1712/rgb", name="a", whatrun="5")
     else:
         click.echo("Invalid choice. Please enter a valid number.")
     end = time.time()

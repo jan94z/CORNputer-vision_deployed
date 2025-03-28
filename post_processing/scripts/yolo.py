@@ -39,15 +39,12 @@ class YoloBaseModel():
     def _parse_source(self, source):
         """Parses the input source (file path, list, or directory)."""
         fps = []
-        if isinstance(source, str):
-            source = Path(source)
-            if os.path.isdir(source):
-                fps.extend(source / f for f in os.listdir(source) if f.endswith('.png'))
-            elif os.path.isfile(source):
-                fps.append(source)
-        elif isinstance(source, (list, tuple)):
-            fps.extend([Path(f) for f in source if os.path.isfile(f)])
+        if source.is_dir():
+            fps.extend(source / f for f in os.listdir(source) if f.endswith('.png'))
+        elif source.is_file():
+            fps.append(source)
         return fps
+    
 class YoloClassificationModel(YoloBaseModel):
     def __init__(self):
         super().__init__()
@@ -61,15 +58,15 @@ class YoloClassificationModel(YoloBaseModel):
         complete_output_path = output_path / name
 
         images = sorted(images)
-        for i in tqdm(range(0, len(images), batch_size), desc="Predicting"):
+        for i in tqdm(range(0, len(images), batch_size), desc="Classifying"):
             batch = images[i:i + batch_size]
             results = model.predict(
                 batch = batch_size,
                 source = batch,
-                output_path = output_path,
+                project = output_path,
                 name = name,
                 device = device,
-                **inferArgs
+                **inferArgs,
                 **self.standard_args
             )
             for r in results:
@@ -88,16 +85,16 @@ class YoloTrackingModel(YoloBaseModel):
         complete_output_path = output_path / name 
 
         images = sorted(images)
-        for i in tqdm(range(0, len(images), batch_size), desc="Predicting"):
+        for i in tqdm(range(0, len(images), batch_size), desc="Tracking"):
             batch = images[i:i + batch_size]
             results = model.track(
                 persist = True,
                 batch = batch_size,
                 source = batch,
-                output_path = output_path,
+                project = output_path,
                 name = name,
                 device = device,
-                **inferArgs
+                **inferArgs,
                 **self.standard_args
             )
             for r in results:
@@ -129,8 +126,7 @@ class YoloClassificationProcessor(YoloBaseProcessor):
 
     def process(self, r, output_path):
         output_path = Path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
-        # os.makedirs(output_path, exist_ok = True)
+        os.makedirs(output_path, exist_ok = True)
         filename = os.path.basename(r.path)
         filename = os.path.splitext(filename)[0]
         r.save(output_path / filename + ".png")
