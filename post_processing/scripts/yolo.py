@@ -33,7 +33,27 @@ class YoloBaseModel():
             "line_width": None
         }
 
-    def predict(self, images:list, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
+    def _process_result(self, result, postprocessor, output_path):
+        postprocessor.process(result, output_path)
+
+    def _parse_source(self, source):
+        """Parses the input source (file path, list, or directory)."""
+        fps = []
+        if isinstance(source, str):
+            source = Path(source)
+            if os.path.isdir(source):
+                fps.extend(source / f for f in os.listdir(source) if f.endswith('.png'))
+            elif os.path.isfile(source):
+                fps.append(source)
+        elif isinstance(source, (list, tuple)):
+            fps.extend([Path(f) for f in source if os.path.isfile(f)])
+        return fps
+class YoloClassificationModel(YoloBaseModel):
+    def __init__(self):
+        super().__init__()
+
+    def predict(self, images, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
+        images = self._parse_source(images)
         # load model
         model_path = Path(model_path)
         model = YOLO(model_path)
@@ -55,32 +75,17 @@ class YoloBaseModel():
             for r in results:
                 self._process_result(r, postprocessor, complete_output_path)
 
-        return complete_output_path
-
-    def _process_result(self, result, postprocessor, output_path):
-        postprocessor.process(result, output_path)
-
-class YoloClassificationModel(YoloBaseModel):
-    def __init__(self, config):
-        super().__init__(config)
-
-class YoloSegmentationModel(YoloBaseModel):
-    def __init__(self, config):
-        super().__init__(config)
-        # for safety, remove tracker from config -> segmentation and tracking configs are identical apart from tracker
-        if 'tracker' in config['infer'].keys():
-            del config['infer']['tracker']
-
 class YoloTrackingModel(YoloBaseModel):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
     
-    def predict(self, images:list, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
+    def predict(self, images, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
+        images = self._parse_source(images)
         # load model
         model_path = Path(model_path)
         model = YOLO(model_path)
         output_path = Path(output_path)
-        complete_output_path = output_path / name
+        complete_output_path = output_path / name 
 
         images = sorted(images)
         for i in tqdm(range(0, len(images), batch_size), desc="Predicting"):
@@ -97,11 +102,6 @@ class YoloTrackingModel(YoloBaseModel):
             )
             for r in results:
                 self._process_result(r, postprocessor, complete_output_path)
-
-        return complete_output_path
-
-    def _process_result(self, result, postprocessor, output_path):
-        postprocessor.process(result, output_path)
 
 #### PROCESSORS ####
 
@@ -128,104 +128,35 @@ class YoloClassificationProcessor(YoloBaseProcessor):
         self.probs = []
 
     def process(self, r, output_path):
-        os.makedirs(output_path, exist_ok = True)
+        output_path = Path(output_path)
+        output_path.mkdir(parents=True, exist_ok=True)
+        # os.makedirs(output_path, exist_ok = True)
         filename = os.path.basename(r.path)
         filename = os.path.splitext(filename)[0]
-        r.save(os.path.join(output_path, filename + ".png"))
+        r.save(output_path / filename + ".png")
 
         for cls, prob in zip(r.probs.cpu().numpy().top5, r.probs.cpu().numpy().top5conf):
             self.probs.append({'path': r.path, 'cls': cls, 'conf': prob})
 
     def export(self, output_path):
+        output_path = Path(output_path)
         export_df = pd.DataFrame(self.probs)
-        export_df.to_csv(os.path.join(output_path, "probs.csv"), index=False)
+        export_df.to_csv(output_path / "probs.csv", index=False)
 
-class YoloSegmentationProcessor(YoloBaseProcessor):
-    def __init__(self, save_overlay:bool=False):
-        self.save_overlay = save_overlay
-
-        self.embryoExists = {}
-
-        self._setOverlayOptions()
-
-    def process(self, r, output_path):
-        img, xyxy, xywh, cls, conf, masks, names, orig_path = self._parseYoloObject(r)
-        filename = os.path.basename(orig_path)
-        filename = os.path.splitext(filename)[0]
-        print(cls, conf, names)
-
-        if self.save_overlay:
-            pass
-            # os.makedirs(os.path.join(output_path, "overlay"), exist_ok = True)
-            # overlay = self._overlay(img, xyxy, cls, conf, masks, names)
-            # overlay = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
-            # cv2.imwrite(os.path.join(output_path, "overlay", filename + ".png"), overlay)
-
-    def _overlay(self, img, xyxy, cls, conf, masks, names):
-        # Apply class name overrides if provided
-        if self.overwrite_class:
-            for k, v in names.items():
-                if v in self.overwrite_class:
-                    names[k] = self.overwrite_class[v]
-
-        # Filter classes if specified
-        class2idx = {list(names.keys()).index(c): i for i, c in enumerate(self.filter_class)} if self.filter_class else {i: i for i in range(len(names))}
-
-        # assign random color if class_colors is None
-        if self.class_colors is None:
-            num_classes = len(names)
-            self.class_colors = [tuple(np.random.randint(0, 256, 3).tolist()) for _ in range(num_classes)]
-
-        overlay = img.copy()
-
-        for box, cl, con, mask in zip(xyxy, cls, conf, masks if masks is not None else [None]*len(xyxy)):
-            if self.filter_class is None or cl in class2idx:
-                color_index = class2idx[cl]
-                x1, y1, x2, y2 = np.round(box).astype(int)
-
-                if self.show_segmentation and mask is not None:
-                    colored_mask = np.dstack([mask] * 3)
-                    colored_mask = np.uint8(np.where(colored_mask == 1, self.class_colors[color_index], 0))
-                    overlay = cv2.addWeighted(overlay, 1, colored_mask, 0.5, 0)
-
-                if self.show_bbox:
-                    overlay = cv2.rectangle(overlay, (x1, y1), (x2, y2), self.class_colors[color_index], 2)
-
-                label = f"{names[cl]}"
-                if self.show_conf:
-                    label += f": {con:.2f}"
-
-                overlay = cv2.putText(overlay, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, self.class_colors[color_index], 2)
-
-        return overlay
-
-    def _setOverlayOptions(self, show_segmentation:bool=True, show_bbox:bool=True, class_colors:list=None, 
-                           overwrite_class:dict=None, filter_class:list=None, show_conf:bool=True):
-        
-        self.show_segmentation = show_segmentation
-        self.show_bbox = show_bbox
-        self.class_colors = class_colors
-        self.overwrite_class = overwrite_class
-        self.filter_class = filter_class
-        self.show_conf = show_conf
-
-class YoloTrackingProcessor(YoloSegmentationProcessor):
-    def __init__(self, calcMetrics:bool=True, saveOverlay:bool=False):
-        self.save_overlay = saveOverlay
-        self.calcMetrics = calcMetrics
-
-        if calcMetrics:
-            self.metrics = {
-                "id": [],
-                "orig_path": [],
-                "center": [],
-                "score": [],
-                "conf": [],
-                "distance_to_center": [],
-                "norm_center_proximity": [],
-                "sharpness": [],
-                "norm_sharpness": []
-            }
+class YoloTrackingProcessor(YoloBaseProcessor):
+    def __init__(self, saveOverlay:bool = False):
+        self.saveOverlay = saveOverlay
+        self.metrics = {
+            "id": [],
+            "orig_path": [],
+            "center": [],
+            "score": [],
+            "conf": [],
+            "distance_to_center": [],
+            "norm_center_proximity": [],
+            "sharpness": [],
+            "norm_sharpness": []
+        }
 
         self.runningMaxSharpness = 0
         self.idCounts = {}
@@ -235,70 +166,68 @@ class YoloTrackingProcessor(YoloSegmentationProcessor):
 
         self._setOverlayOptions()
         self._setScoreOptions()
-        # self._setThresholdFactor()
+        self._setThresholdFactor()
 
     def process(self, r, output_path):
+        output_path = Path(output_path)
         img, xyxy, xywh, cls, conf, masks, names, orig_path, ids = self._parseYoloObject(r)
         filename = os.path.basename(orig_path)
         filename = os.path.splitext(filename)[0]
 
-        if self.calcMetrics:
-            self._extractMetrics(img, xywh, conf, masks, orig_path, ids)
+        self._extractMetrics(img, xywh, conf, masks, orig_path, ids)
 
-        if self.save_overlay:
-            os.makedirs(os.path.join(output_path, "overlay"), exist_ok = True)
+        if self.saveOverlay:
+            os.makedirs(output_path / "overlay", exist_ok = True)
             overlay = self._overlay(img, xyxy, cls, conf, masks, names, ids)
             overlay = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(os.path.join(output_path, "overlay", filename + ".png"), overlay)
+            cv2.imwrite(output_path / "overlay" / f"{filename}.png", overlay)
 
-    def export(self, output_path):
-        if self.calcMetrics:
-            os.makedirs(os.path.join(output_path, "single_seed_masks_before", "rgb"), exist_ok = True)
-            os.makedirs(os.path.join(output_path, "single_seed_masks_before", "binary"), exist_ok = True)
-            os.makedirs(os.path.join(output_path, "single_seed_masks", "rgb"), exist_ok = True)
-            os.makedirs(os.path.join(output_path, "single_seed_masks", "binary"), exist_ok = True)
+    def export(self, output_path, method):
+        output_path = Path(output_path)
+        os.makedirs(output_path / "single_seed_masks_before" / "rgb", exist_ok = True)
+        os.makedirs(output_path / "single_seed_masks_before" / "binary", exist_ok = True)
+        os.makedirs(output_path / "single_seed_masks" / "rgb", exist_ok = True)
+        os.makedirs(output_path / "single_seed_masks" / "binary", exist_ok = True)
 
-            self.metrics_df = pd.DataFrame(self.metrics)
-            self.metrics_df.to_csv(os.path.join(output_path, "metrics.csv"), index=False)
+        self.metrics_df = pd.DataFrame(self.metrics)
+        self.metrics_df.to_csv(output_path / "metrics.csv", index=False)
 
-            for id_, instance in self.bestInstances.items():
-                instance["count"] = self.idCounts.get(id_, 0)  # Add final count
-            
-            self.best_instances_df = pd.DataFrame.from_dict(self.bestInstances, orient="index").reset_index(drop=True)
-            self.best_instances_df.to_csv(os.path.join(output_path, "best_instances.csv"), index=False)
+        for id_, instance in self.bestInstances.items():
+            instance["count"] = self.idCounts.get(id_, 0)  # Add final count
+        
+        self.best_instances_df = pd.DataFrame.from_dict(self.bestInstances, orient="index").reset_index(drop=True)
+        self.best_instances_df.to_csv(output_path / "best_instances.csv", index=False)
 
+        # filter out outliers
+        if method == "mean_std":
             mean_count, std_count = self.best_instances_df['count'].mean(), self.best_instances_df['count'].std()
             thresh_count = mean_count - self.factor_std * std_count
             thresh_count = abs(thresh_count) if thresh_count < 0 else thresh_count # safeguard against negative threshold
             self.best_instances_cleaned_df = self.best_instances_df[self.best_instances_df['count'] > thresh_count]
             self.best_instances_cleaned_df.to_csv(os.path.join(output_path, "best_instances_cleaned.csv"), index=False)
             self.count_stats = pd.DataFrame({"mean": [mean_count], "std": [std_count], "thresh": [thresh_count]})
-            self.count_stats.to_csv(os.path.join(output_path, "count_stats.csv"))
+        elif method == "mad":
+            # Compute Median Absolute Deviation (MAD)
+            median_count = self.best_instances_df['count'].median()
+            mad_count = (self.best_instances_df['count'] - median_count).abs().median()
+            # Define threshold using MAD (typically 2.5 to 3 times MAD)
+            thresh_count = median_count - self.factor_std * mad_count 
+            # Filter out outliers
+            self.best_instances_cleaned_df = self.best_instances_df[self.best_instances_df['count'] > thresh_count]
+            # Save cleaned data
+            self.best_instances_cleaned_df.to_csv(os.path.join(output_path, "best_instances_cleaned.csv"), index=False)
+            # Save threshold statistics
+            self.count_stats = pd.DataFrame({"median": [median_count], "mad": [mad_count], "thresh": [thresh_count]})
+        self.count_stats.to_csv(output_path / "count_stats.csv")
 
-            # # Compute Median Absolute Deviation (MAD)
-            # median_count = self.best_instances_df['count'].median()
-            # mad_count = (self.best_instances_df['count'] - median_count).abs().median()
+        # Save masks
+        for id_ in self.best_instances_df['id']:
+            cv2.imwrite(output_path / "single_seed_masks_before" / "binary" / f"{id_}.png", self.bestInstanceMasks["binary"][id_])
+            cv2.imwrite(output_path / "single_seed_masks_before" / "rgb" / f"{id_}.png", cv2.cvtColor(self.bestInstanceMasks["rgb"][id_], cv2.COLOR_RGB2BGR))
 
-            # # Define threshold using MAD (typically 2.5 to 3 times MAD)
-            # thresh_count = median_count - self.factor_std * mad_count 
-
-            # # Filter out outliers
-            # self.best_instances_cleaned_df = self.best_instances_df[self.best_instances_df['count'] > thresh_count]
-
-            # # Save cleaned data
-            # self.best_instances_cleaned_df.to_csv(os.path.join(output_path, "best_instances_cleaned.csv"), index=False)
-
-            # # Save threshold statistics
-            # self.count_stats = pd.DataFrame({"median": [median_count], "mad": [mad_count], "thresh": [thresh_count]})
-            # self.count_stats.to_csv(os.path.join(output_path, "count_stats.csv"))
-
-            for id_ in self.best_instances_df['id']:
-                cv2.imwrite(os.path.join(output_path, "single_seed_masks_before", "binary", f"{id_}.png"), self.bestInstanceMasks["binary"][id_])
-                cv2.imwrite(os.path.join(output_path, "single_seed_masks_before", "rgb", f"{id_}.png"), cv2.cvtColor(self.bestInstanceMasks["rgb"][id_], cv2.COLOR_RGB2BGR))
-
-            for id_ in self.best_instances_cleaned_df['id']:
-                cv2.imwrite(os.path.join(output_path, "single_seed_masks", "binary", f"{id_}.png"), self.bestInstanceMasks["binary"][id_])
-                cv2.imwrite(os.path.join(output_path, "single_seed_masks", "rgb", f"{id_}.png"), cv2.cvtColor(self.bestInstanceMasks["rgb"][id_], cv2.COLOR_RGB2BGR))
+        for id_ in self.best_instances_cleaned_df['id']:
+            cv2.imwrite(output_path / "single_seed_masks" / "binary" / f"{id_}.png", self.bestInstanceMasks["binary"][id_])
+            cv2.imwrite(output_path / "single_seed_masks" / "rgb" / f"{id_}.png", cv2.cvtColor(self.bestInstanceMasks["rgb"][id_], cv2.COLOR_RGB2BGR))
 
     def _extractMetrics(self, img, xywh, conf, masks, orig_path, ids):
         if ids is not None:
@@ -416,6 +345,15 @@ class YoloTrackingProcessor(YoloSegmentationProcessor):
     def _setThresholdFactor(self, factor_std=2):
         self.factor_std = factor_std
 
+    def _setOverlayOptions(self, show_segmentation:bool=True, show_bbox:bool=True, class_colors:list=None, 
+                        overwrite_class:dict=None, filter_class:list=None, show_conf:bool=True):
+        
+        self.show_segmentation = show_segmentation
+        self.show_bbox = show_bbox
+        self.class_colors = class_colors
+        self.overwrite_class = overwrite_class
+        self.filter_class = filter_class
+        self.show_conf = show_conf
 
 
 

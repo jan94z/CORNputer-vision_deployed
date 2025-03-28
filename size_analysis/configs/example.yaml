@@ -1,8 +1,0 @@
-input_path: ""
-output_path: ""
-scale: 1.8 # mm/px
-method: "pca" # mbr
-scaling_factor: True # False for no correction
-open: 5 # "" for no open
-close: 5 # "" for no close
-save_img: True
