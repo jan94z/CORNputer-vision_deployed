@@ -1,11 +1,13 @@
 output_path: "" # path
+name: ""
 batch: 8
+device: null
 
 # tracking
 seg_model: "" # path
 conf: 0.7 # tracking
 iou: 0.5 # tracking
-tracker: "" # path, tracking
+tracker: "/home/jan/CORNputer-vision_deployed/post_processing/tracker/botsort.yaml" # path, tracking
 save_seg_masks: True
 seg_masks_visualization: # only relevant if save_seg_masks is True
   show_pixels: True

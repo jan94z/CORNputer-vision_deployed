@@ -4,60 +4,58 @@ import os
 import pandas as pd
 from ultralytics import YOLO
 from tqdm import tqdm
+from pathlib import Path
 
 #### MODELS ####
 
 class YoloBaseModel():
-    def __init__(self, config):
-        self._parse_config(config)
-
+    def __init__(self):
         self.standard_args = {
-            
+            "verbose": False,
+            "half": True,
+            "max_det": 300,
+            "vid_stride": 1,
+            "stream_buffer": False,
+            "visualize": False,
+            "augment": False,
+            "agnostic_nms": False,
+            "classes": None,
+            "retina_masks": False,
+            "embed": None,
+            "show": False,
+            "save": False,
+            "save_txt": False,
+            "save_conf": False,
+            "save_crop": False,
+            "show_labels": True,
+            "show_conf": True,
+            "show_boxes": True,
+            "line_width": None
         }
 
-    def predict(self, images:list, output_name, postprocessor, trainedModel:str='best'):
+    def predict(self, images:list, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
         # load model
-        if trainedModel == 'best' or trainedModel == 'last':
-            model_path = os.path.join(self.outputPath, "train", self.name, "weights", f"{trainedModel}.pt")
-        else:
-            model_path = trainedModel
+        model_path = Path(model_path)
         model = YOLO(model_path)
-
-        if output_name is None:
-            project = os.path.join(self.outputPath, "predict", self.name)
-        else:
-            project = os.path.join(self.outputPath, "predict", self.name, output_name)
+        output_path = Path(output_path)
+        complete_output_path = output_path / name
 
         images = sorted(images)
-        for i in tqdm(range(0, len(images), self.batchSize), desc="Predicting"):
-            batch = images[i:i + self.batchSize]
+        for i in tqdm(range(0, len(images), batch_size), desc="Predicting"):
+            batch = images[i:i + batch_size]
             results = model.predict(
-                batch = self.batchSize,
+                batch = batch_size,
                 source = batch,
-                project = project,
-                name = self.name,
-                device = self.device,
-                **self.inferArgs
+                output_path = output_path,
+                name = name,
+                device = device,
+                **inferArgs
+                **self.standard_args
             )
             for r in results:
-                self._process_result(r, postprocessor, project)
+                self._process_result(r, postprocessor, complete_output_path)
 
-        return project
-
-    def _parse_config(self, config):
-        self.data = config['data']
-        self.task = config['task']
-        self.model = config['model']
-        self.pretrained = config['pretrained']
-        self.outputPath = config['output_path']
-        self.name = config['name']
-        self.device = config['device']
-        self.batchSize = config['batch']
-        self.trainArgs = config['train']
-        self.augmentArgs = config['augment']
-        self.valArgs = config['val']
-        self.inferArgs = config['infer']
-        self.customArgs = config['customArgs']
+        return complete_output_path
 
     def _process_result(self, result, postprocessor, output_path):
         postprocessor.process(result, output_path)
@@ -77,36 +75,33 @@ class YoloTrackingModel(YoloBaseModel):
     def __init__(self, config):
         super().__init__(config)
     
-    def predict(self, images:list, output_name, postprocessor, trainedModel:str='best'):
+    def predict(self, images:list, model_path, output_path, name, postprocessor, batch_size:int=8, device=None, **inferArgs):
         # load model
-        if trainedModel == 'best' or trainedModel == 'last':
-            model_path = os.path.join(self.outputPath, "train", self.name, "weights", f"{trainedModel}.pt")
-        else:
-            model_path = trainedModel
-
+        model_path = Path(model_path)
         model = YOLO(model_path)
-
-        if output_name is None:
-            project = os.path.join(self.outputPath, "predict", self.name)
-        else:
-            project = os.path.join(self.outputPath, "predict", self.name, output_name)
+        output_path = Path(output_path)
+        complete_output_path = output_path / name
 
         images = sorted(images)
-        for i in tqdm(range(0, len(images), self.batchSize), desc="Predicting"):
-            batch = images[i:i + self.batchSize]
+        for i in tqdm(range(0, len(images), batch_size), desc="Predicting"):
+            batch = images[i:i + batch_size]
             results = model.track(
                 persist = True,
-                batch = self.batchSize,
+                batch = batch_size,
                 source = batch,
-                project = project,
-                name = self.name,
-                device = self.device,
-                **self.inferArgs
+                output_path = output_path,
+                name = name,
+                device = device,
+                **inferArgs
+                **self.standard_args
             )
             for r in results:
-                self._process_result(r, postprocessor, project)
+                self._process_result(r, postprocessor, complete_output_path)
 
-        return project
+        return complete_output_path
+
+    def _process_result(self, result, postprocessor, output_path):
+        postprocessor.process(result, output_path)
 
 #### PROCESSORS ####
 
