@@ -1,0 +1,37 @@
+output_path: "/home/jan/output/TESTING" # path
+batch: 8
+device: null
+
+# tracking
+seg_model: "/home/jan/CORNputer-vision_deployed/predict/models/segmentation/segmentation.pt" # path
+conf: 0.7 
+iou: 0.5 
+tracker: "/home/jan/CORNputer-vision_deployed/predict/tracker/botsort.yaml" # path, tracking
+save_seg_masks: True
+seg_masks_visualization: # only relevant if save_seg_masks is True
+  show_pixels: True
+  show_bboxs: True
+  show_conf: True
+  color: [[255, 0, 0]]
+  overwrite_class: null
+
+# score
+alpha: 0.33333 # conf
+beta: 0.33333 # center proximity
+gamma: 0.33333 # sharpness
+
+# filtering
+filter_method: "mean_std" # mad
+factor_std: 2.0
+
+# classification
+cls_broken_model: "/home/jan/CORNputer-vision_deployed/predict/models/classification/broken.pt" # path
+cls_tip_model: "/home/jan/CORNputer-vision_deployed/predict/models/classification/tip.pt" # path
+save_cls_masks: True
+
+# size estimation
+size_method: "pca" # mbr
+scaling_factor: True
+save_size_masks: True
+open: 5
+close: 5

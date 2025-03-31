@@ -1,27 +1,24 @@
 import click
-import time
 import data_capture.run as run_data_capture
-import post_processing.run as run_post_processing
+import model_development.run as run_training
+import predict.run as run_predict
 
 def main():
     click.echo("Choose the program you want to run:")
     click.echo("1. Data Capture")
-    click.echo("2. Postprocessing")
+    click.echo("2. Training")
+    click.echo("3. Prediction")
 
     choice = input("Enter the number of the program you want to run: ")
 
     if choice == "1":
-        start = time.time()
         run_data_capture.main()
     elif choice == "2":
-        start = time.time()
-        # run_post_processing.main()
-        run_post_processing.main(config = "/home/jan/CORNputer-vision_deployed/post_processing/configs/example.yaml",
-    data = "/home/jan/datasets/1712/rgb", name="a", whatrun="5")
+        run_training.main()
+    elif choice == "3":
+        run_predict.main()
     else:
         click.echo("Invalid choice. Please enter a valid number.")
-    end = time.time()
-    click.echo(f"Time taken: {end - start} seconds.")
 
 if __name__ == "__main__":
     main()
