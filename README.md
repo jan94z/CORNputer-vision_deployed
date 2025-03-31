@@ -107,9 +107,13 @@ You will be asked to:
   - `2` – Save frame on key press
   - `3` – Continuously capture all frames
 
-> Example config: `data_capture/configs/realsense_config.yaml`
+> Example config: `data_capture/configs/example.yaml`
 
 All images and camera settings are saved automatically to the defined path.
+
+If you want to change Camera Settings manually, do so in the camera configuration.
+
+> Example camera configuration `data_capture/configs/example.json`
 
 ---
 
@@ -127,6 +131,7 @@ python whatrun.py
 → Validate? (y/n)
 ```
 
+> Example training configuration `model_development/param_configs/example.yaml`
 ---
 
 ### 3. 🧪 Prediction & Post-Processing
