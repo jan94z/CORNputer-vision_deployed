@@ -4,8 +4,7 @@ Welcome to the **CORNputer Vision** repository! This project forms the backbone 
 
 The required Python Version is **Python 3.11**.
 
-# UBUNTU GUIDE
-## 🚀 Installation
+## 🚀 Ubuntu Installation Guide
 Follow these steps to set up the repository on **Ubuntu 20.04**.
 
 ### 🔧 Realsense Library
@@ -44,12 +43,8 @@ Execute the following command in the root directory of this repository to instal
 pip install -r requirements.txt
 ```
 
-## 🛠️ Usage
-
-# WINDOWS GUIDE
-## 🚀 Installation on Windows
-
-Follow these steps to set up the repository on **Windows 10/11** using **Python 3.11**.
+## 🚀 Windows Installation Guide 
+Follow these steps to set up the repository on **Windows 10/11**.
 
 ### 🔧 Realsense Library
 
@@ -83,4 +78,80 @@ Once the virtual environment is activated, install the required packages with:
 pip install -r requirements.txt
 ```
 
+## 🛠️ Usage
 
+### ▶️ Main Entry Point: `whatrun.py`
+
+Run the main launcher:
+
+```bash
+python whatrun.py
+```
+
+You will be prompted to choose:
+
+```
+1. Data Capture
+2. Training
+3. Prediction
+```
+
+---
+
+### 1. 📷 Data Capture (RealSense)
+
+You will be asked to:
+- Provide the path to the camera config file
+- Choose one of the following modes:
+  - `1` – Display camera stream (RGB, Depth, Background Removed)
+  - `2` – Save frame on key press
+  - `3` – Continuously capture all frames
+
+> Example config: `data_capture/configs/realsense_config.yaml`
+
+All images and camera settings are saved automatically to the defined path.
+
+---
+
+### 2. 🏋️‍♂️ Model Training
+
+You will be prompted for:
+- Path to the training config
+- Whether to train and/or validate
+
+```bash
+python whatrun.py
+→ 2
+→ Enter config path
+→ Train? (y/n)
+→ Validate? (y/n)
+```
+
+---
+
+### 3. 🧪 Prediction & Post-Processing
+
+You will be prompted for:
+- Config file
+- Image input folder
+- Output folder name
+- Task to execute:
+  - `1` – Tracking
+  - `2` – Classification (broken/intact)
+  - `3` – Classification (tip/no tip)
+  - `4` – Size estimation
+  - `5` – Run all steps
+
+---
+
+## 🔁 Full Non-Interactive Example (Prediction)
+
+```bash
+python predict/run.py \
+  --config predict/configs/example.yaml \
+  --data datasets/.../... \
+  --name test_run \
+  --whatrun 5
+```
+
+This command performs tracking, both classification tasks, and size estimation in one go.
