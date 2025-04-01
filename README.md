@@ -2,7 +2,7 @@
 
 Welcome to the **CORNputer Vision** repository! This project forms the backbone of my master's thesis, where I developed a camera- and computer vision-powered system for maize seed analysis.
 
-The required Python Version is **Python 3.11**.
+The Python Version used during the development of this repository is **Python 3.11**.
 
 ## 🚀 Ubuntu Installation Guide
 Follow these steps to set up the repository on **Ubuntu 20.04**.
@@ -40,7 +40,7 @@ deactivate
 Execute the following command in the root directory of this repository to install the required Python packages:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements_ubuntu.txt
 ```
 
 ## 🚀 Windows Installation Guide 
@@ -72,11 +72,12 @@ deactivate
 
 ### 📥 Install required Python packages
 
-Once the virtual environment is activated, install the required packages with:
-
 ```bash
-pip install -r requirements.txt
+pip install torch==2.6.0+cpu torchvision==0.21.0+cpu --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements_windows.txt
 ```
+
+Please note: in Windows CUDA is not going to be installed, i.e. GPU training / inference is not possible.
 
 ## 🛠️ Usage
 

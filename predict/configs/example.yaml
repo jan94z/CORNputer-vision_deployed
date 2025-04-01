@@ -1,6 +1,6 @@
 output_path: "/home/jan/output/TESTING" # path
 batch: 8
-device: null
+device: 0 # "cpu"
 
 # tracking
 seg_model: "/home/jan/CORNputer-vision_deployed/predict/models/segmentation/segmentation.pt" # path
