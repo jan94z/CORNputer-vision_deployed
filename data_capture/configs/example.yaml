@@ -1,4 +1,4 @@
-camera_config: "/home/jan/CORNputer-vision2/data_capture/configs/example405.json"
+camera_config: "/home/jan/CORNputer-vision_deployed/data_capture/configs/example.json"
 # camera_config: "" # no camera config
 save_path: "/home/jan/datasets/examples/405"
 
