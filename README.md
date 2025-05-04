@@ -8,7 +8,7 @@ Soon to come! The thesis is still being corrected so I can't publish any results
 ## Features 
 - Intel Realsense Camera integration to capture image series of maize seeds
 - YOLOv11 Instance Segmentation & Multi-Object-Tracking to identify unique maize seeds in the captured image series
-- MeanAbs/Mean-Std filtering to get rid of ID association errors
+- MedianAbs/MeanStd filtering to eliminate of ID association errors (flickering)
 - Calculation of a custom score to find the best image of each single maize seed and create single seed masks
 - A combination of dimension identification (mimimum bounding rectangle / PCA) and a reference object to calculate the real world length and width of the maize seeds
 - YOLOv11 classification models to identify broken maize seeds and missing seed tips
