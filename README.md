@@ -1,11 +1,20 @@
 # CORNputer Vision Repository 🌽
 
-Welcome to the **CORNputer Vision** repository! This project forms the backbone of my master's thesis, where I developed a camera- and computer vision-powered system for maize seed analysis.
+Welcome to the **CORNputer Vision** repository! This project forms the backbone of my master's thesis, where I developed a camera- and computer vision-powered system for maize seed analysis. 
 
-The Python Version used during the development of this repository is **Python 3.11**.
+## Abstract & Example images
+Soon to come! The thesis is still being corrected so I can't publish any results. The main idea was to use computer vision to analyze maize seeds as traditonal seed analysis techniques are either time-intensive or inaccurate.
+
+## Features 
+- Intel Realsense Camera integration to capture image series of maize seeds
+- YOLOv11 Instance Segmentation & Multi-Object-Tracking to identify unique maize seeds in the captured image series
+- MeanAbs/Mean-Std filtering to get rid of ID association errors
+- Calculation of a custom score to find the best image of each single maize seed and create single seed masks
+- A combination of dimension identification (mimimum bounding rectangle / PCA) and a reference object to calculate the real world length and width of the maize seeds
+- YOLOv11 classification models to identify broken maize seeds and missing seed tips
 
 ## Ubuntu Installation Guide
-Follow these steps to set up the repository on **Ubuntu 20.04**.
+Follow these steps to set up the repository on **Ubuntu 20.04**. The Python Version used during the development of this repository is **Python 3.11**.
 
 ### Realsense Library
 To capture images using a Realsense camera, install the Realsense library following the [Realsense Installation Guide](https://dev.intelrealsense.com/docs/compiling-librealsense-for-linux-ubuntu-guide).
@@ -44,7 +53,7 @@ pip install -r requirements_ubuntu.txt
 ```
 
 ## Windows Installation Guide 
-Follow these steps to set up the repository on **Windows 10/11**.
+Follow these steps to set up the repository on **Windows 10/11**. The Python Version used during the development of this repository is **Python 3.11**.
 
 ### 🔧 Realsense Library
 
